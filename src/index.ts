@@ -3,6 +3,7 @@ import cors from 'cors';
 import 'dotenv/config';
 import githubAuthRoute from '../src/routes/github/auth';
 import githubResumeRoute from '../src/routes/github/resume';
+import enumsRoute from '../src/routes/mysql/enums';
 
 const {json, urlencoded} = express;
 const port = process.env.PORT;
@@ -19,6 +20,7 @@ app.use(urlencoded());
 
 app.use('/github/auth', githubAuthRoute);
 app.use('/github/resume', githubResumeRoute);
+app.use('/enum', enumsRoute);
 
 app.listen(port, () => {
     console.log(`Server Started at ${port}`)

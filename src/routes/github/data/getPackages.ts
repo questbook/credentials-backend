@@ -6,7 +6,7 @@ const GetPackages = async (accessToken) => {
     return await axios.get('https://api.github.com/user/packages?package_type=npm', {headers: headers})
         .then((res)=>res.data)
         .catch((err)=>{
-            console.error('Error fetching the packages', err);
+            // console.error('Error fetching the packages', err);
             throw err;
         });
 }

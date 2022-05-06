@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  credentials_express:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 3033:3033
+    volumes:
+      - .:/app
+      - '/app/modules'
+    depends_on:
+      - credentials_mysql
+
+  credentials_mysql:
+    image: mysql:8.0
+    environment:
+      - MYSQL_DATABASE=credentials
+      - MYSQL_USER=sourav
+      - MYSQL_PASSWORD=Sourav_questbook
+      - MYSQL_ROOT_PASSWORD=Sourav_questbook

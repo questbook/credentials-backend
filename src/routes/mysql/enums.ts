@@ -10,10 +10,10 @@ router.get('/', (req, res) => {
 let con = null;
 
 const mysqlConfig ={
-    host: "credentials_mysql",
-    user: "sourav",
-    password: "Sourav_questbook",
-    database: "credentials",
+    host: process.env.MYSQL_HOST,
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD,
+    database: process.env.MYSQL_DB,
 }
 
 router.get('/connect', (req, res)=>{

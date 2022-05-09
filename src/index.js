@@ -1,9 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
-import githubAuthRoute from './routes/github/auth';
-import githubResumeRoute from './routes/github/resume';
-import enumsRoute from './routes/mysql/enums';
+import githubAuthRoute from './routes/github/auth.js';
+import githubResumeRoute from './routes/github/resume.js';
+import enumsRoute from './routes/mysql/enums.js';
 
 const {json, urlencoded} = express;
 const port = process.env.PORT;

@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "backend for credentials project",
   "main": "src/index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon src/index.ts",

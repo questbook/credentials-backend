@@ -1,10 +1,10 @@
 import express from 'express'
-import GetCommits from './data/getCommits';
-import GetIssues from './data/getIssues';
-import GetPackages from './data/getPackages';
-import GetPullrequests from './data/getPullrequests';
-import GetRepos from './data/getRepos';
-import GetUser from './data/getUser';
+import GetCommits from './data/getCommits.js';
+import GetIssues from './data/getIssues.js';
+import GetPackages from './data/getPackages.js';
+import GetPullrequests from './data/getPullrequests.js';
+import GetRepos from './data/getRepos.js';
+import GetUser from './data/getUser.js';
 const router = express.Router()
 
 router.get('/',async (req, res) => {

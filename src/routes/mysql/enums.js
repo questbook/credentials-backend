@@ -2,6 +2,7 @@ import express from 'express';
 const router = express.Router()
 import mysql from 'mysql2';
 import axios from 'axios';
+import GetUser from '../github/data/getUser.js';
 
 router.get('/', (req, res) => {
     res.send('welcome to syntax portocol');
@@ -72,6 +73,7 @@ function createEnumTable (name){
 
         const sql = `
         CREATE TABLE IF NOT EXISTS enumlists(
+            list_creator TEXT NOT NULL,
             list_name TEXT NOT NULL,
             user_name TEXT NOT NULL,
             repo_name TEXT NOT NULL,
@@ -86,23 +88,25 @@ function createEnumTable (name){
     
 }
 
-async function insertRowInEnumListinser(list_name, user_name, repo_name, file_extension) {
+async function insertRowInEnumListinser(list_creator, list_name, user_name, repo_name, file_extension) {
     con.connect((err)=>{
         if(err) throw err;
-        const sql = `INSERT INTO enumlists (list_name, user_name, repo_name, file_extension) VALUES ('${list_name}', '${user_name}', '${repo_name}', '${file_extension}')`
+        const sql = `INSERT INTO enumlists (list_creator, list_name, user_name, repo_name, file_extension) VALUES ('${list_creator}', '${list_name}', '${user_name}', '${repo_name}', '${file_extension}')`
         con.query(sql, (err, result)=>{
             if(err) throw err;
-            console.log(`${user_name} inserted into table`)
+            // console.log(`${user_name} inserted into table`)
         })
     })
 }
 
-async function getUsersOfRepo(accessToken, enumList, enumName) {
+async function getUsersOfRepo(listCreator, accessToken, enumList, enumName) {
     const headers = {Authorization: `Bearer ${accessToken}`};
     const usersLists = [];
     enumList.map(async (obj,i)=>{
+        
         axios.get(`https://api.github.com/repos/${obj.repo_name}/commits`, {headers: headers})
         .then(res=>{
+            
             const repo_commit ={};
             if(res.data.length>0){
                 const allCommits = res.data;
@@ -112,8 +116,10 @@ async function getUsersOfRepo(accessToken, enumList, enumName) {
                     
                     commit_files_data?.files.map((file,i)=>{
                         if(obj.file_extension===file.filename?.split('.')[1]){
-                            console.log(commit.author.login);
+                            // console.log(obj.repo_name, commit.author.login);
+                            // console.log("repo name", obj.repo_name, res.data.length, commit_files_data?.files.length);
                             insertRowInEnumListinser(
+                                listCreator,
                                 enumName, 
                                 commit.author.login, 
                                 obj.repo_name, 
@@ -146,7 +152,9 @@ router.post('/create', async (req, res)=>{
 
     await createEnumTable(enumName);
 
-    await getUsersOfRepo(accessToken,enumList, enumName);
+    const listCreator = await GetUser(accessToken);
+
+    await getUsersOfRepo(listCreator?.login, accessToken,enumList, enumName);
 
     res.send({enumName, enumList});
 })
@@ -157,10 +165,9 @@ router.post('/getlists', async (req, res)=>{
     con = mysql.createConnection(mysqlConfig);
     con.connect((err)=>{
         if(err) throw err;
-        const sql= `select list_name from enumlists where user_name = '${user_name}'`
+        const sql= `select distinct list_name, list_creator from enumlists where user_name = '${user_name}'`
         con.query(sql, (err, result, fields)=>{
             if(err) throw err;
-            console.log(JSON.stringify(result))
             res.send(result);
         })
     })

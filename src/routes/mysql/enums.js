@@ -72,12 +72,14 @@ function createEnumTable (name){
         console.log('connected');
 
         const sql = `
-        CREATE TABLE IF NOT EXISTS enumlists(
-            list_creator TEXT NOT NULL,
-            list_name TEXT NOT NULL,
-            user_name TEXT NOT NULL,
-            repo_name TEXT NOT NULL,
-            file_extension TEXT NOT NULL
+        CREATE TABLE IF NOT EXISTS lists(
+            list_id TEXT NOT NULL,
+            username TEXT NOT NULL,
+            repository TEXT NOT NULL,
+            file_extension TEXT NOT NULL,
+            source TEXT NOT NULL,
+            list_created_by TEXT NOT NULL,
+            list_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=INNODB;
         `;
         con.query(sql, (err, result)=>{
@@ -88,10 +90,11 @@ function createEnumTable (name){
     
 }
 
-async function insertRowInEnumListinser(list_creator, list_name, user_name, repo_name, file_extension) {
+async function insertRowInEnumListinser(list_id, username, repository, file_extension, source, list_created_by) {
     con.connect((err)=>{
         if(err) throw err;
-        const sql = `INSERT INTO enumlists (list_creator, list_name, user_name, repo_name, file_extension) VALUES ('${list_creator}', '${list_name}', '${user_name}', '${repo_name}', '${file_extension}')`
+        const sql = `INSERT INTO lists (list_id, username, repository, file_extension, source, list_created_by)
+                        VALUES ('${list_id}', '${username}', '${repository}', '${file_extension}', '${source}', '${list_created_by}')`
         con.query(sql, (err, result)=>{
             if(err) throw err;
             // console.log(`${user_name} inserted into table`)
@@ -119,11 +122,12 @@ async function getUsersOfRepo(listCreator, accessToken, enumList, enumName) {
                             // console.log(obj.repo_name, commit.author.login);
                             // console.log("repo name", obj.repo_name, res.data.length, commit_files_data?.files.length);
                             insertRowInEnumListinser(
-                                listCreator,
-                                enumName, 
-                                commit.author.login, 
-                                obj.repo_name, 
-                                obj.file_extension);
+                                enumName,
+                                commit.author.login,
+                                obj.repo_name,
+                                obj.file_extension,
+                                'github', //needs to be fetched from an enum
+                                listCreator);
                         }
                     })
 
@@ -161,14 +165,52 @@ router.post('/create', async (req, res)=>{
 
 router.post('/getlists', async (req, res)=>{
     const {user_name}=req.body;
-    console.log(user_name);
     con = mysql.createConnection(mysqlConfig);
     con.connect((err)=>{
         if(err) throw err;
-        const sql= `select distinct list_name, list_creator from enumlists where user_name = '${user_name}'`
+        const sql= `select distinct list_id, list_created_by from lists where username = '${user_name}'`
         con.query(sql, (err, result, fields)=>{
             if(err) throw err;
             res.send(result);
+        })
+    })
+})
+
+router.get('/lists/:listid', async (req, res)=>{
+    const {listid} = req.params;
+    con = mysql.createConnection(mysqlConfig);
+    con.connect((err)=>{
+        if(err) throw err;
+        const sql= `select distinct username, list_id,  source, list_created_at from lists where list_id = '${listid}'`
+        con.query(sql, (err, result, fields)=>{
+            if(err) throw err;
+            res.send(result);
+        })
+    })
+})
+
+router.get('/users/:userid', async (req, res)=>{
+    const {userid} = req.params;
+    con = mysql.createConnection(mysqlConfig);
+    con.connect((err)=>{
+        if(err) throw err;
+        const sql= `select distinct list_id, list_created_by from lists where username = '${userid}'`
+        con.query(sql, (err, result, fields)=>{
+            if(err) throw err;
+            res.send(result);
+        })
+    })
+})
+
+router.get('/users/:userid/lists/:listid', async (req, res)=>{
+    const {userid, listid} = req.params;
+    con = mysql.createConnection(mysqlConfig);
+    con.connect((err)=>{
+        if(err) throw err;
+        const sql= `select count(distinct list_id) as count from lists where username = '${userid}' and list_id = '${listid}'`
+        con.query(sql, (err, result, fields)=>{
+            if(err) throw err;
+            res.send(result[0].count>0?true:false);
         })
     })
 })

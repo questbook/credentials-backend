@@ -31,10 +31,10 @@ router.get('/callback',async (req, res) => {
     const token = jwt.sign(accessToken, process.env.secret);
     res.cookie('github-jwt', accessToken, {
         httpOnly: false,
-        domain: 'localhost',
+        domain: 'syntaxprotocol.xyz',
     });
 
-    res.redirect(`http://localhost:3000${path}`);
+    res.redirect(`http://syntaxprotocol.xyz:3000${path}`);
 })
 
 export default router;

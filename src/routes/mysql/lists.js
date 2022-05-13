@@ -4,10 +4,6 @@ import mysql from 'mysql2';
 import axios from 'axios';
 import GetUser from '../github/data/getUser.js';
 
-router.get('/', (req, res) => {
-    res.send('welcome to syntax portocol');
-})
-
 let con = null;
 
 const mysqlConfig ={
@@ -17,55 +13,7 @@ const mysqlConfig ={
     database: process.env.MYSQL_DB,
 }
 
-router.get('/connect', (req, res)=>{
-    con = mysql.createConnection(mysqlConfig);
-    con.connect( (err)=>{
-        if(err) throw err;
-        res.send('connected');
-    })
-})
-
-router.get('/create-table', (req,res)=>{
-    con.connect((err)=>{
-        if(err) throw err;
-        const sql = `
-        CREATE TABLE IF NOT EXISTS numbers(
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            number INT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=INNODB;
-        `;
-        con.query(sql, (err, result)=>{
-            if(err) throw err;
-            res.send("numbers table created");
-        });
-    });
-});
-
-router.get('/insert', (req,res)=>{
-    const number = Math.round(Math.random()*100);
-    con.connect((err)=>{
-        if(err) throw err;
-        const sql = `INSERT INTO numbers (number) VALUES (${number})`
-        con.query(sql, (err, result)=>{
-            if(err) throw err;
-            res.send(`${number} inserted into table`)
-        })
-    })
-})
-
-router.get('/fetch',(req, res)=>{
-    con.connect((err)=>{
-        if(err) throw err;
-        const sql = 'SELECT * FROM numbers'
-        con.query(sql, (err, result, fields)=>{
-            if(err) throw err;
-            res.send(JSON.stringify(result))
-        })
-    })
-})
-
-function createEnumTable (name){
+function createEnumTable (){
     con = mysql.createConnection(mysqlConfig);
     con.connect( (err)=>{
         if(err) throw err;
@@ -84,7 +32,7 @@ function createEnumTable (name){
         `;
         con.query(sql, (err, result)=>{
             if(err) throw err;
-            console.log(`${name} table created`);
+            console.log(`lists table created`);
         });
     })
     
@@ -123,7 +71,7 @@ async function getUsersOfRepo(listCreator, accessToken, enumList, enumName) {
                             // console.log("repo name", obj.repo_name, res.data.length, commit_files_data?.files.length);
                             insertRowInEnumListinser(
                                 enumName,
-                                commit.author.login,
+                                commit?.author?.login,
                                 obj.repo_name,
                                 obj.file_extension,
                                 'github', //needs to be fetched from an enum
@@ -147,20 +95,44 @@ async function getUsersOfRepo(listCreator, accessToken, enumList, enumName) {
         })
         .catch(err=>{console.log(err)});
     })
+}
 
+function deconstructQuery(query){
+    const fileextension_regex = /file-extension EQUALS\s*"(.*?)"/ig
+    const repos_regex = /repository IN\s*\((.*?)\)/ig
+    const each_repo_regex = /"(.*?)"/g
+
+    const file_extension_query = query.match(fileextension_regex);
+    const file_extensions = file_extension_query[0].match(each_repo_regex);
+
+    const repos_query = query.match(repos_regex);
+    const repos = repos_query[0].match(each_repo_regex);
+
+    let queryLists = [];
+    repos.map((repo)=>{
+        const obj = {}
+        obj['repo_name'] = repo.replaceAll('"','');
+        obj['file_extension'] = file_extensions[0].replaceAll('"','');
+        queryLists.push(obj);
+    });
+    return queryLists;
 }
 
 router.post('/create', async (req, res)=>{
-    const{enumName, enumList} = req.body;
+    const{enumName, query} = req.body;
     const accessToken = req.headers.authorization;
 
-    await createEnumTable(enumName);
+    const queryLists = deconstructQuery(query);
+    
+    console.log(queryLists.toString());
+
+    await createEnumTable();
 
     const listCreator = await GetUser(accessToken);
 
-    await getUsersOfRepo(listCreator?.login, accessToken,enumList, enumName);
+    await getUsersOfRepo(listCreator?.login, accessToken, queryLists, enumName);
 
-    res.send({enumName, enumList});
+    res.send({enumName, queryLists});
 })
 
 router.post('/getlists', async (req, res)=>{

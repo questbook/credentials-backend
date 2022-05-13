@@ -20,7 +20,8 @@ const getGithubAccessToken = async (code) => {
 
 router.get('/callback',async (req, res) => {
     const code = get(req, "query.code");
-    const path = get(req, "query.path", "/");
+    const path = get(req, "query.path");
+    console.log('req.query', req.query);
 
     if(!code){
         throw new Error("No code!");
@@ -29,11 +30,17 @@ router.get('/callback',async (req, res) => {
     console.log(accessToken);
 
     const token = jwt.sign(accessToken, process.env.secret);
-    res.cookie('github-jwt', accessToken, {
-        httpOnly: false,
-        domain: process.env.DOMAIN,
-    });
-
+    if(path == "/"){
+        res.cookie('github-jwt', accessToken, {
+            httpOnly: false,
+            domain: process.env.DOMAIN,
+        });
+    }else{
+        res.cookie('profile-jwt', token, {
+            httpOnly: false,
+            domain: process.env.DOMAIN,
+        });
+    }
     res.redirect(`${process.env.URL}${path}`);
 })
 

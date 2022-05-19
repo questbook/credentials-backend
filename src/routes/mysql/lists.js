@@ -22,9 +22,11 @@ function createEnumTable (){
         const sql = `
         CREATE TABLE IF NOT EXISTS lists(
             list_id TEXT NOT NULL,
-            username TEXT NOT NULL,
-            repository TEXT NOT NULL,
-            file_extension TEXT NOT NULL,
+            username TEXT,
+            erc721_address TEXT,
+            erc721_name TEXT,
+            repository TEXT,
+            file_extension TEXT,
             source TEXT NOT NULL,
             list_created_by TEXT NOT NULL,
             list_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -45,7 +47,6 @@ async function insertRowInEnumListinser(list_id, username, repository, file_exte
                         VALUES ('${list_id}', '${username}', '${repository}', '${file_extension}', '${source}', '${list_created_by}')`
         con.query(sql, (err, result)=>{
             if(err) throw err;
-            // console.log(`${user_name} inserted into table`)
         })
     })
 }
@@ -118,6 +119,33 @@ function deconstructQuery(query){
     return queryLists;
 }
 
+function deconstructNftQuery(nftQuery){
+    const erc721_regex = /ERC721 EQUALS\s*"(.*?)"/ig
+    const remove_quotes_regex = /"(.*?)"/g
+
+    const contract_query = nftQuery.match(erc721_regex);
+    const smartcontract_address = contract_query[0].match(remove_quotes_regex);
+
+    return smartcontract_address;
+}
+
+async function inserterc721DataToDb(listName, data, listCreator){
+    const{tokenRegistry} = data;
+    const {id:address, name, tokens: holders} = tokenRegistry;
+    await createEnumTable();
+
+    holders?.map((owner)=>{
+        con.connect((err)=>{
+            if(err) throw err;
+            const sql = `INSERT INTO lists (list_id, username, erc721_address, erc721_name, source, list_created_by)
+                            VALUES ('${listName}', '${owner.owner.id}', '${address}', '${name}', 'erc721', '${listCreator?.login}')`
+            con.query(sql, (err, result)=>{
+                if(err) throw err;
+            })
+        })
+    });
+}
+
 router.post('/create', async (req, res)=>{
     const{enumName, query} = req.body;
     const accessToken = req.headers.authorization;
@@ -133,6 +161,34 @@ router.post('/create', async (req, res)=>{
     await getUsersOfRepo(listCreator?.login, accessToken, queryLists, enumName);
 
     res.send({enumName, queryLists});
+})
+
+
+router.post('/create-erc721-list', async (req, res)=>{
+    const{enumName, nftQuery} = req.body;
+    const accessToken = req.headers.authorization;
+    const smartcontract_address = deconstructNftQuery(nftQuery);
+
+    const result = await axios.post('https://api.thegraph.com/subgraphs/name/amxx/eip721-subgraph',{
+      query:`
+      {
+        tokenRegistry(id:${smartcontract_address}){
+          id
+          name
+          symbol
+          tokens{
+            owner{
+              id
+            }
+          }
+        }
+      }`
+    });
+
+    const listCreator = await GetUser(accessToken);
+    await inserterc721DataToDb(enumName, result.data.data, listCreator);
+
+    res.send(JSON.stringify(result.data.data));
 })
 
 router.post('/getlists', async (req, res)=>{
@@ -153,7 +209,7 @@ router.get('/lists/:listid', async (req, res)=>{
     con = mysql.createConnection(mysqlConfig);
     con.connect((err)=>{
         if(err) throw err;
-        const sql= `select distinct username, list_id,  source, list_created_at from lists where list_id = '${listid}'`
+        const sql= `select distinct username, list_id,  source, list_created_at, erc721_name from lists where list_id = '${listid}'`
         con.query(sql, (err, result, fields)=>{
             if(err) throw err;
             res.send(result);

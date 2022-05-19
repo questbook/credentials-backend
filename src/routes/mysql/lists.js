@@ -126,7 +126,7 @@ function deconstructNftQuery(nftQuery){
     const contract_query = nftQuery.match(erc721_regex);
     const smartcontract_address = contract_query[0].match(remove_quotes_regex);
 
-    return smartcontract_address;
+    return smartcontract_address[0].toLowerCase();
 }
 
 async function inserterc721DataToDb(listName, data, listCreator){

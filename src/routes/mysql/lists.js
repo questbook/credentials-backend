@@ -147,10 +147,10 @@ async function inserterc721DataToDb(listName, data, listCreator){
 }
 
 router.post('/create', async (req, res)=>{
-    const{enumName, query} = req.body;
+    const{enumName, githubQuery} = req.body;
     const accessToken = req.headers.authorization;
 
-    const queryLists = deconstructQuery(query);
+    const queryLists = deconstructQuery(githubQuery);
     
     console.log(queryLists.toString());
 

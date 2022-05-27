@@ -4,6 +4,7 @@ import 'dotenv/config';
 import githubAuthRoute from './routes/github/auth.js';
 import githubResumeRoute from './routes/github/resume.js';
 import listsRoute from './routes/mysql/lists.js';
+import stackoverflowRoute from './routes/mysql/stackoverflow.js';
 import profileRoute from './routes/mysql/profile.js';
 
 const {json, urlencoded} = express;
@@ -22,6 +23,7 @@ app.use(urlencoded());
 app.use('/github/auth', githubAuthRoute);
 // app.use('/github/resume', githubResumeRoute);
 app.use('/list', listsRoute);
+app.use('/list/stackoverflow', stackoverflowRoute );
 app.use('/profile',profileRoute);
 
 

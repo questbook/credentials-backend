@@ -21,7 +21,6 @@ const getGithubAccessToken = async (code) => {
 router.get('/callback',async (req, res) => {
     const code = get(req, "query.code");
     const path = get(req, "query.path");
-    console.log('req.query', req.query);
 
     if(!code){
         throw new Error("No code!");

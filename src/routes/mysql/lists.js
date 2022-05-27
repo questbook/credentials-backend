@@ -120,7 +120,7 @@ function deconstructQuery(query){
 }
 
 function deconstructNftQuery(nftQuery){
-    const erc721_regex = /ERC721 EQUALS\s*"(.*?)"/ig
+    const erc721_regex = /contract-address EQUALS\s*"(.*?)"/ig
     const remove_quotes_regex = /"(.*?)"/g
 
     const contract_query = nftQuery.match(erc721_regex);
